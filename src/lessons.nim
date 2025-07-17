@@ -62,7 +62,7 @@ proc discoverExercises*(): seq[Exercise] =
           var multiLineExpectedOutput: seq[string] = @[]
           var inExpectedOutputBlock = false
 
-          try
+          try:
             for line in lines(filePath):
               let strippedLine = line.strip()
               if strippedLine.startsWith("# Description:"):
