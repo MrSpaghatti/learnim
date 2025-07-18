@@ -1,11 +1,9 @@
-import json
-import os
-import ospaths
+import std/json
+import std/os
+import sets
 
 const AppName = "Nimlings"
 const StateFileName = "state.json"
-
-import sets
 
 type
   UserState* = object
@@ -26,11 +24,19 @@ proc loadState*(): UserState =
   if fileExists(stateFile):
     try:
       let data = readFile(stateFile)
-      result = fromJsonStr[UserState](data)
-      # Missing fields like `points` (int) or `earnedBadges` (HashSet)
-      # are typically initialized to their default values (0 and empty set respectively)
-      # by Nim's object construction during JSON deserialization if not present in JSON.
-    except JsonParsingError as e:
+      let j = parseJson(data)
+      var completed: seq[string]
+      for item in j["completedExercises"]:
+        completed.add(item.getStr())
+      var earned: seq[string]
+      for item in j["earnedBadges"]:
+        earned.add(item.getStr())
+      result = UserState(
+        completedExercises: completed,
+        points: j["points"].getInt(),
+        earnedBadges: toHashSet(earned)
+      )
+    except (JsonParsingError, KeyError) as e:
       echo "Warning: Could not parse state file: ", e.msg, ". Starting with a fresh state."
       result = UserState(completedExercises: @[], points: 0, earnedBadges: initHashSet[string]())
     except IOError:
@@ -43,8 +49,9 @@ proc loadState*(): UserState =
 proc saveState*(state: UserState) =
   let stateFile = getStateFilePath()
   try:
-    let data = toJson(state)
-    writeFile(stateFile, data)
+    var j: JsonNode
+    j = %*{"completedExercises": %state.completedExercises, "points": %state.points, "earnedBadges": %toSeq(state.earnedBadges)}
+    writeFile(stateFile, j.pretty)
   except IOError:
     echo "Error: Could not write state file to " & stateFile
 

@@ -1,10 +1,9 @@
-import os
-import ospaths
+import std/os
 import strutils
+import options
+import std/algorithm
 
 const ExercisesDir = "exercises" # Relative to the project root or executable path
-
-import strformat
 
 type
   Exercise* = object
@@ -28,9 +27,9 @@ proc getExercisesRootPath*(): string =
 
   # Fallback for development: assume 'exercises' is in the current working dir or one level up
   if dirExists(ExercisesDir):
-    return getCurrentDir() / ExercisesDir
+    return os.getCurrentDir() / ExercisesDir
   elif dirExists(".." / ExercisesDir): # If running from src/
-    return getCurrentDir() / ".." / ExercisesDir
+    return os.getCurrentDir() / ".." / ExercisesDir
   else:
     # This should ideally not happen if the project structure is correct
     raise newException(IOError, "Could not find the 'exercises' directory. Searched in " & candidatePath & " and relative to current dir.")
@@ -130,7 +129,7 @@ proc findExercise*(nameOrPathFragment: string, allExercises: seq[Exercise]): Opt
       return some(exercise)
 
   # Try path fragment match
-  var found: Option[Exercise] = none()
+  var found: Option[Exercise] = none(Exercise)
   var multipleFound = false
   for exercise in allExercises:
     if nameOrPathFragment in exercise.path:
@@ -142,7 +141,7 @@ proc findExercise*(nameOrPathFragment: string, allExercises: seq[Exercise]): Opt
 
   if multipleFound:
     echo "Multiple exercises match '", nameOrPathFragment, "'. Please be more specific."
-    return none()
+    return none(Exercise)
 
   return found
 
